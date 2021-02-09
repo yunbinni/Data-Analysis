@@ -1,0 +1,190 @@
+---
+title: "종합시각화"
+author: "조윤빈"
+date: '2020 8 30 '
+output: html_document
+---
+
+## 필요한 패키지 불러오기
+```{r}
+library(ggiraphExtra)
+library(tibble)
+library(maps)
+library(ggplot2)
+library(mapproj)
+library(dplyr)
+library(readxl)
+library(leaflet)
+library(leaflet.extras)
+library(corrplot)
+```
+
+
+## 데이터 불러오기
+```{r}
+# 주유소 위/경도
+pyegas <- read.csv("전국폐주유소(위경도).csv")
+pyegas <- rename(pyegas,
+                 "상호명" = "사업장명",
+                 "경도" = "X",
+                 "위도" = "Y")
+# View(pyegas)
+
+# 스타벅스 DT 위/경도
+MAP_star <- read_excel("MAP_Starbucks_DT.xlsx")
+#View(MAP_star)
+
+# 맥도날드 DT 위/경도
+MAP_mac <- read_excel("MAP_Mcdonald_DT.xlsx")
+# View(MAP_mac)
+
+# 관광지 위/경도
+MAP_tour <- read.csv("전국관광지정보데이터.csv")
+# View(MAP_tour)
+
+# 편의점 위/경도
+MAP_conv <- read_xlsx("MAP_Conv.xlsx")
+# View(MAP_conv)
+```
+
+
+## 주유소 시각화
+```{r}
+# 아이콘 생성
+icon_gas <- makeIcon(iconUrl = "gas.jpg",
+                     iconWidth = 50,
+                     iconHeight = 50)
+
+# 시각화
+GAS <- leaflet() %>% 
+    addTiles() %>% 
+    addMarkers(lat = pyegas$"위도", lng = pyegas$"경도",
+               clusterOptions = markerClusterOptions(),
+               popup = pyegas$"상호명",
+               icon = icon_gas) %>% 
+    addDrawToolbar(editOptions = editToolbarOptions(selectedPathOptions = 
+                                                        selectedPathOptions()))
+GAS
+```
+
+
+## 스타벅스, 맥도날드 DT 시각화
+```{r}
+# df생성
+MAP_star_mac <- rbind(MAP_star, MAP_mac)
+# View(df)
+
+# 아이콘 생성
+icon_sb_mac <- iconList(
+    starbucksIcon = makeIcon("logo.png", 50, 50),
+    macIcon = makeIcon("mac.png", 50, 50)
+)
+
+
+# 시각화
+DT <- leaflet() %>% 
+    addTiles() %>% 
+    addMarkers(lat = MAP_star_mac$"위도", lng = MAP_star_mac$"경도",
+               clusterOptions = markerClusterOptions(),
+               popup = MAP_star_mac$"상호명",
+               icon = icon_sb_mac) %>% 
+    addDrawToolbar(editOptions = editToolbarOptions(selectedPathOptions = 
+                                                        selectedPathOptions()))
+DT
+```
+
+
+## 편의점 시각화
+```{r}
+MAP_conv <- read_xlsx("MAP_conv.xlsx")
+# View(MAP_conv)
+
+# 아이콘 생성
+icon_conv <- iconList(
+  gsIcon = makeIcon("gs25.png", 50, 50),
+  cuIcon = makeIcon("cu.png", 50, 50)
+)
+
+CONV <- leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(lat = MAP_conv$"위도", lng = MAP_conv$"경도",
+             clusterOptions = markerClusterOptions(),
+             popup = MAP_conv$"상호명",
+             icon = icon_conv) %>% 
+  addDrawToolbar(editOptions = editToolbarOptions(selectedPathOptions = 
+                                                        selectedPathOptions()))
+CONV
+```
+
+
+## 관광지 시각화
+```{r}
+df_map <- MAP_tour[, c(1, 5, 6)]
+df_map <- rename(df_map,
+                 "상호명" = "관광지명",
+                 "위도" = "위도",
+                 "경도" = "경도")
+
+#colnames(df_map)
+
+icIcon <- makeIcon(iconUrl = "관광지.png",
+                   iconWidth = 50,
+                   iconHeight = 50)
+
+ic_map <-  leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(lat = df_map$"위도", lng=df_map$"경도",
+             clusterOptions = markerClusterOptions(),
+             popup = df_map$관광지명,
+             icon = icIcon)
+ic_map
+```
+
+
+## 전국-고속도로-IC위치_시각화
+```{r}
+df <- read_excel("영업소 위치정보.xlsx")
+
+df_ic <- df %>% filter(df$x좌표!=0)
+
+library(leaflet)
+df_hwy <- data.frame("상호명" = df_ic$영업소명,
+                     "위도" = df_ic$y좌표,
+                     "경도" = df_ic$x좌표) 
+
+df_hwy$"위도" <- as.numeric(df_hwy$"위도")
+df_hwy$"경도" <- as.numeric(df_hwy$"경도")
+
+ic_map <-  leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(lat = df_hwy$"위도",lng=df_hwy$"경도",
+             clusterOptions = markerClusterOptions(),
+             popup = df_hwy$상호명)
+ic_map
+```
+
+
+## 폐주유소와 변수들 일반시각화
+```{r}
+# 라벨링
+pyegas$label <- "주유소"
+MAP_star$label <- "스타벅스DT"
+MAP_mac$label <- "맥도날드DT"
+MAP_conv$label <- "편의점"
+df_hwy$label <- "고속도로IC"
+df_map$label <- "관광지"
+
+df_total <- rbind(pyegas,
+                  MAP_star,
+                  MAP_mac,
+                  MAP_conv,
+                  df_hwy,
+                  df_map)
+
+ggplot(data = df_total,
+       aes(x = 경도, y = 위도,
+           col = label)) +
+  geom_point()
+```
+
+

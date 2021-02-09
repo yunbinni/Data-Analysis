@@ -1,0 +1,89 @@
+---
+title: "주유소와_스타벅스DT_맥도날드DT_시각화"
+author: "조윤빈"
+date: "2020-08-26"
+output: html_document
+---
+
+## 필요한 패키지 불러오기
+```{r}
+library(ggiraphExtra)
+library(tibble)
+library(maps)
+library(ggplot2)
+library(mapproj)
+library(dplyr)
+library(readxl)
+library(leaflet)
+library(leaflet.extras)
+library(corrplot)
+```
+
+
+## 데이터 불러오기
+```{r}
+# 스타벅스 DT 위/경도
+MAP_star <- read_excel("MAP_Starbucks_DT.xlsx")
+# View(MAP_star)
+
+# 맥도날드 DT 위/경도
+MAP_mac <- read_excel("MAP_Mcdonald_DT.xlsx")
+# View(MAP_mac)
+
+# 주유소 위/경도
+MAP_gas <- read_excel("MAP_Gas_Station.xlsx")
+# View(MAP_gas)
+```
+
+
+## 주유소 시각화
+```{r}
+# 아이콘 생성
+icon_gas <- makeIcon(iconUrl = "gas.jpg",
+                     iconWidth = 50,
+                     iconHeight = 50)
+
+# 시각화
+GAS <- leaflet() %>% 
+    addTiles() %>% 
+    addMarkers(lat = MAP_gas$"위도", lng = MAP_gas$"경도",
+               clusterOptions = markerClusterOptions(),
+               popup = MAP_gas$"상호명",
+               icon = icon_gas) %>% 
+    addDrawToolbar(editOptions = editToolbarOptions(selectedPathOptions = 
+                                                        selectedPathOptions()))
+GAS
+```
+
+
+## 스타벅스, 맥도날드 DT 시각화
+```{r}
+# df생성
+df <- rbind(MAP_star, MAP_mac)
+# View(df)
+
+# 아이콘 생성
+icon_sb_mac <- iconList(
+    starbucksIcon = makeIcon("logo.png", 50, 50),
+    macIcon = makeIcon("mac.png", 50, 50)
+)
+
+
+# 시각화
+DT <- leaflet() %>% 
+    addTiles() %>% 
+    addMarkers(lat = df$"위도", lng = df$"경도",
+               clusterOptions = markerClusterOptions(),
+               popup = df$"상호명",
+               icon = icon_sb_mac) %>% 
+    addDrawToolbar(editOptions = editToolbarOptions(selectedPathOptions = 
+                                                        selectedPathOptions()))
+DT
+```
+
+
+## 주유소와 스타벅스/맥도날드 DT점의 입지(위치)에 따른 상관관계 분석하기
+```{r}
+
+```
+
